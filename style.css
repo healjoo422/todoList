@@ -1,0 +1,133 @@
+.sidebar{
+    border: 1px solid #ccc;
+}
+
+.height-full{
+    height: 100vh;      /* fallback */
+    min-height: 100dvh;
+}
+
+.width-full{
+    width: 100vw;       /* fallback */
+    min-width: 100dvw;
+}
+
+.main > .container{
+    margin: 12px;
+}
+
+.subject-title > p {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.main {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.message-area{
+    margin-bottom: auto;
+    padding: 12px 16px;
+}
+
+.subject {
+    flex: 0.5;
+    display: flex;
+    flex-direction: column;
+}
+
+.option{
+    display: flex;
+    flex: 0.5;
+}
+
+
+
+.chat {
+    flex: 15;
+    display: flex;
+    flex-direction: column;
+    margin-top: auto;
+    padding-bottom: 12px;
+}
+
+.chat .input-area{
+    margin-top: auto;
+}
+
+.input-area {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #d8deea;
+    border-radius: 24px;
+    padding: 10px 64px 10px 14px;
+    box-shadow: 0 6px 20px rgba(22, 29, 45, 0.06);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subject .input-area {
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+.input-area:focus-within {
+    border-color: #89a9ff;
+    box-shadow: 0 0 0 4px rgba(137, 169, 255, 0.18);
+}
+
+.input-area .form-control {
+    min-height: 40px;
+    padding: 6px 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+.input-control {
+    resize: none;
+    overflow-y: hidden;
+    line-height: 1.4;
+    max-height: 220px;
+    display: block;
+}
+
+.subject .form-control{
+    min-height: 52px;
+}
+
+.send-btn {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    padding: 0;
+    line-height: 1;
+    font-size: 1rem;
+    display: grid;
+    place-items: center;
+}
+
+.send-btn:disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+
+.option-left {
+    padding-left: 0px;
+}
+.option-right {
+    padding-right: 0px;
+}
+
+.option .input-area {
+    border-radius: 12px;
+    padding: 10px 14px;
+}

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body class="bg-body-tertiary">
+    <div class="container row width-full">
+        <div class="container col-2 sidebar height-full">
+            sidebar
+        </div>
+        <div class="container col-10 col main height-full">
+            <div class="container subject">
+                <div class="container subject-title">
+                    <p>주제 입력</p>
+                </div>
+                <div class="input-area">
+                    <textarea id="input_subject" class="form-control input-control subject-text" placeholder="Type a subject..."></textarea>
+                </div>    
+            </div>
+            <div class="container option row">
+                <div class="container col-6 option-left">
+                    <div>
+                        <div>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" alt="Option 1">
+                        </div>
+                        <div>
+
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <textarea id="input_option1" class="form-control input-control option-text" placeholder="Type an option..."></textarea>
+                    </div>
+                </div>
+                <div class="container col-6 option-right">
+                    <div>
+                        <div>
+                            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" alt="Option 2">
+                        </div>
+                        <div>
+                            
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <textarea id="input_option2" class="form-control input-control option-text" placeholder="Type an option..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="container chat">
+                <div class="message-area">text area</div>
+                <div class="input-area">
+                    <textarea id="input_message" class="form-control input-control" rows="1" placeholder="Type a message..."></textarea>
+                    <button class="btn btn-primary send-btn" type="button" aria-label="Send message">&#10148;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
