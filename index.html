@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo Dashboard</title>
+    <title>개인용 Todo App</title>
+
+    <!-- IBM Plex Sans KR 폰트 구글폰트에서 가져오기 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <!-- IBM Plex Sans KR 폰트 -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,6 +17,7 @@
     <div class="bg-glow bg-glow-left" aria-hidden="true"></div>
     <div class="bg-glow bg-glow-right" aria-hidden="true"></div>
 
+    <!-- 상단고정 해더 / 네비게이션 포함 -->
     <header class="top-header">
         <div class="top-inner">
             <div class="brand-wrap">
@@ -34,6 +36,8 @@
         <p class="subtitle">todo Check</p>
 
         <main>
+
+            <!-- todo 관리 페이지 -->
             <section id="panelTodoCheck" class="panel card tab-panel active" data-panel="todocheck">
                 <div class="panel-head">
                     <h2>일일 관리</h2>
@@ -42,6 +46,7 @@
                 <ul id="taskList" class="task-list" aria-label="해당 날짜의 할 일 목록"></ul>
             </section>
 
+            <!-- 할 일 추가 페이지 -->
             <section id="panelAdd" class="panel card tab-panel" data-panel="add">
                 <h2>할 일 추가</h2>
                 <form id="taskForm" class="task-form">
@@ -64,6 +69,7 @@
                 </form>
             </section>
 
+            <!-- 연간 대시보드 페이지 -->
             <section id="panelDashboard" class="panel card tab-panel" data-panel="dashboard">
                 <div class="panel-head">
                     <h2>연간 대시보드 (할 일별)</h2>
@@ -74,10 +80,6 @@
                     <div class="summary-item">
                         <p>할 일 개수</p>
                         <strong id="taskCount">0</strong>
-                    </div>
-                    <div class="summary-item">
-                        <p>연간 예정 체크 수</p>
-                        <strong id="yearPlannedCount">0</strong>
                     </div>
                     <div class="summary-item">
                         <p>연간 완료율</p>

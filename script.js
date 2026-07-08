@@ -23,23 +23,28 @@ const yearCompletionRate = document.getElementById("yearCompletionRate");
 const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
 const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
+// 오늘 날짜를 문자열로 생성(yyyy-mm-dd)
 function todayStr() {
     return new Date().toISOString().slice(0, 10);
 }
 
+// 이번달 문자열 생성(yyyy-mm)
 function monthStr(date) {
     return date.toISOString().slice(0, 7);
 }
 
+// 날짜 문자열을 집어넣으면 각각 { year, month, day } 로 슬라이싱해서 반환
 function parseDateParts(dateStr) {
     const [year, month, day] = dateStr.split("-").map((v) => Number(v));
     return { year, month, day };
 }
 
+// 월 문자열 반환
 function formatMonthLabel(monthIndex) {
     return `${monthIndex + 1}월`;
 }
 
+// todo 목록에 삽입되는 객체의 고유값을 생성하는 함수 (생성형 AI의 도움 받음)
 function makeId() {
     if (window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
@@ -52,10 +57,12 @@ function completionKey(taskId, date) {
     return `${taskId}|${date}`;
 }
 
+// 로컬 스토리지 저장
 function persistState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+// 로컬 스토리지에서 저장된 데이터 불러오기
 function loadState() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -74,6 +81,7 @@ function loadState() {
     }
 }
 
+// 네비게이션 탭 선택한 탭 활성화하고 나머지는 비활성화 상태로 세팅하는 함수
 function setActiveTab(tab) {
     state.activeTab = tab;
 
@@ -90,6 +98,7 @@ function setActiveTab(tab) {
     persistState();
 }
 
+// 
 function isVisibleOnDate(task, date) {
     if (task.type === "one-time") {
         return task.dueDate === date;
@@ -288,7 +297,7 @@ function renderTaskDashboards() {
 
         const meta = document.createElement("p");
         meta.className = "task-dashboard-meta";
-        meta.textContent = task.type === "daily" ? `매일 반복 · 시작일 ${task.startDate}` : `일회성 · 실행일 ${task.dueDate}`;
+        meta.textContent = task.type === "daily" ? `매일 · 시작일 ${task.startDate}` : `일회성 · 실행일 ${task.dueDate}`;
 
         left.appendChild(title);
         left.appendChild(meta);
