@@ -1,4 +1,4 @@
-const STORAGE_KEY = "llm_debate_todo_state_v2";
+const STORAGE_KEY = "todo_state_v2";
 const GENERAL_TASK_MODAL_ID = "generalTaskModal";
 const DEFAULT_THEME = "dark";
 
@@ -23,7 +23,7 @@ const state = {
     generalTasks: [],
     dailyProgress: {},
     weeklyCompletions: {},
-    theme: DEFAULT_THEME
+    theme: DEFAULT_THEME    
 };
 
 const todayLabel = document.getElementById("todayLabel");
@@ -35,6 +35,7 @@ const generalTaskForm = document.getElementById("generalTaskForm");
 const generalTaskTitle = document.getElementById("generalTaskTitle");
 const generalTaskSubtitle = document.getElementById("generalTaskSubtitle");
 const generalTaskError = document.getElementById("generalTaskError");
+const resetGeneralDoneBtn = document.getElementById("resetGeneralDoneBtn");
 const themeToggle = document.getElementById("themeToggle");
 const generalTaskModalElement = document.getElementById(GENERAL_TASK_MODAL_ID);
 const generalTaskModal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(generalTaskModalElement) : null;
@@ -201,6 +202,19 @@ function toggleGeneralTask(taskId) {
 // 일반 할 일 제거
 function removeGeneralTask(taskId) {
     state.generalTasks = state.generalTasks.filter((task) => task.id !== taskId);
+    saveAndRender();
+}
+
+function resetGeneralTaskDoneState() {
+    if (state.generalTasks.length === 0) {
+        return;
+    }
+
+    state.generalTasks = state.generalTasks.map((task) => ({
+        ...task,
+        done: false
+    }));
+
     saveAndRender();
 }
 
@@ -484,6 +498,10 @@ if (generalTaskTitle) {
 
 if (generalTaskSubtitle) {
     generalTaskSubtitle.addEventListener("input", clearGeneralTaskError);
+}
+
+if (resetGeneralDoneBtn) {
+    resetGeneralDoneBtn.addEventListener("click", resetGeneralTaskDoneState);
 }
 
 // 다크 모드 토글 버튼 이벤트 리스너
