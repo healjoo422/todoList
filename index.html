@@ -1,65 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Todo Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- IBM Plex Sans KR 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
 </head>
-<body class="bg-body-tertiary">
-    <div class="container row width-full">
-        <div class="container col-2 sidebar height-full">
-            sidebar
-        </div>
-        <div class="container col-10 col main height-full">
-            <div class="container subject">
-                <div class="container subject-title">
-                    <p>주제 입력</p>
-                </div>
-                <div class="input-area">
-                    <textarea id="input_subject" class="form-control input-control subject-text" placeholder="Type a subject..."></textarea>
-                </div>    
-            </div>
-            <div class="container option row">
-                <div class="container col-6 option-left">
-                    <div>
-                        <div>
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/ChatGPT-Logo.svg" alt="Option 1">
-                        </div>
-                        <div>
+<body>
+    <!-- 배경에 흐릿한 빛 효과(글로우) -->
+    <div class="bg-glow bg-glow-left" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-right" aria-hidden="true"></div>
 
-                        </div>
-                    </div>
-                    <div class="input-area">
-                        <textarea id="input_option1" class="form-control input-control option-text" placeholder="Type an option..."></textarea>
-                    </div>
-                </div>
-                <div class="container col-6 option-right">
-                    <div>
-                        <div>
-                            <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_aurora_33f86dc0c0257da337c63.svg" alt="Option 2">
-                        </div>
-                        <div>
-                            
-                        </div>
-                    </div>
-                    <div class="input-area">
-                        <textarea id="input_option2" class="form-control input-control option-text" placeholder="Type an option..."></textarea>
-                    </div>
-                </div>
+    <header class="top-header">
+        <div class="top-inner">
+            <div class="brand-wrap">
+                <p class="eyebrow">KH 교육원 개인과제</p>
+                <h1>Todo Dashboard</h1>
             </div>
-            <div class="container chat">
-                <div class="message-area">text area</div>
-                <div class="input-area">
-                    <textarea id="input_message" class="form-control input-control" rows="1" placeholder="Type a message..."></textarea>
-                    <button class="btn btn-primary send-btn" type="button" aria-label="Send message">&#10148;</button>
-                </div>
-            </div>
+            <nav class="tab-nav" aria-label="화면 탭">
+                <button id="tabBtnTodoCheck" class="tab-btn active" data-tab="todocheck" type="button">todoCheck</button>
+                <button id="tabBtnAdd" class="tab-btn" data-tab="add" type="button">Add</button>
+                <button id="tabBtnDashboard" class="tab-btn" data-tab="dashboard" type="button">Dashboard</button>
+            </nav>
         </div>
+    </header>
+
+    <div class="app-shell">
+        <p class="subtitle">todo Check</p>
+
+        <main>
+            <section id="panelTodoCheck" class="panel card tab-panel active" data-panel="todocheck">
+                <div class="panel-head">
+                    <h2>일일 관리</h2>
+                    <input id="focusDate" class="input input-date" type="date">
+                </div>
+                <ul id="taskList" class="task-list" aria-label="해당 날짜의 할 일 목록"></ul>
+            </section>
+
+            <section id="panelAdd" class="panel card tab-panel" data-panel="add">
+                <h2>할 일 추가</h2>
+                <form id="taskForm" class="task-form">
+                    <label class="label" for="taskTitle">할 일 제목</label>
+                    <input id="taskTitle" class="input" type="text" placeholder="예: 영어 단어 30개 암기" required>
+
+                    <label class="label" for="taskType">유형</label>
+                    <select id="taskType" class="input" required>
+                        <option value="daily">매일</option>
+                        <option value="one-time">일회성</option>
+                    </select>
+
+                    <div class="inline-group">
+                        <div>
+                            <label id="taskDateLabel" class="label" for="taskDate">실행 날짜</label>
+                            <input id="taskDate" class="input" type="date" required aria-describedby="taskDateHint">
+                        </div>
+                        <button type="submit" class="btn btn-primary">추가</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="panelDashboard" class="panel card tab-panel" data-panel="dashboard">
+                <div class="panel-head">
+                    <h2>연간 대시보드 (할 일별)</h2>
+                    <input id="yearPicker" class="input input-year" type="number" min="2000" max="2100" step="1">
+                </div>
+
+                <div class="summary annual-summary">
+                    <div class="summary-item">
+                        <p>할 일 개수</p>
+                        <strong id="taskCount">0</strong>
+                    </div>
+                    <div class="summary-item">
+                        <p>연간 예정 체크 수</p>
+                        <strong id="yearPlannedCount">0</strong>
+                    </div>
+                    <div class="summary-item">
+                        <p>연간 완료율</p>
+                        <strong id="yearCompletionRate">0%</strong>
+                    </div>
+                </div>
+
+                <div id="taskDashboards" class="task-dashboards" aria-label="할 일별 연간 대시보드"></div>
+
+                <div class="legend">
+                    <span><i class="dot done"></i> 완료</span>
+                    <span><i class="dot partial"></i> 일부 완료</span>
+                    <span><i class="dot missed"></i> 미완료</span>
+                    <span><i class="dot none"></i> 일정 없음</span>
+                </div>
+            </section>
+        </main>
     </div>
 
     <script src="script.js"></script>
