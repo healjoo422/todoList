@@ -34,10 +34,37 @@ const weeklyTaskList = document.getElementById("weeklyTaskList");
 const generalTaskForm = document.getElementById("generalTaskForm");
 const generalTaskTitle = document.getElementById("generalTaskTitle");
 const generalTaskSubtitle = document.getElementById("generalTaskSubtitle");
+const generalTaskError = document.getElementById("generalTaskError");
 const themeToggle = document.getElementById("themeToggle");
 const generalTaskModalElement = document.getElementById(GENERAL_TASK_MODAL_ID);
 const generalTaskModal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(generalTaskModalElement) : null;
 
+const SPECIAL_CHARACTER_PATTERN = /[^0-9A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ\s]/;
+
+function hasSpecialCharacters(value) {
+    return SPECIAL_CHARACTER_PATTERN.test(value);
+}
+
+function setGeneralTaskError(message) {
+    if (!generalTaskError) {
+        return;
+    }
+
+    generalTaskError.textContent = message;
+    generalTaskError.classList.remove("d-none");
+}
+
+function clearGeneralTaskError() {
+    if (!generalTaskError) {
+        return;
+    }
+
+    generalTaskError.textContent = "";
+    generalTaskError.classList.add("d-none");
+}
+
+
+// 다크 모드 & 라이트 모드
 function getPreferredTheme() {
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
         return "light";
@@ -46,6 +73,7 @@ function getPreferredTheme() {
     return DEFAULT_THEME;
 }
 
+// 고유 ID 생성
 function makeId() {
     if (window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
@@ -54,6 +82,7 @@ function makeId() {
     return `task_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
+// 오늘 날짜를 YYYY-MM-DD 형식으로 반환
 function todayKey(date = new Date()) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -61,11 +90,13 @@ function todayKey(date = new Date()) {
     return `${year}-${month}-${day}`;
 }
 
+// 한국식 날짜 포맷 (YYYY.MM.DD (요일))
 function formatKoreanDate(date = new Date()) {
     const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} (${weekdays[date.getDay()]})`;
 }
 
+// 주간 키 생성에 필요한 부분(주간 컨텐츠의 시작점)
 function getWeeklyPeriodStart(date = new Date()) {
     const current = new Date(date);
     current.setHours(0, 0, 0, 0);
@@ -82,14 +113,17 @@ function getWeeklyPeriodStart(date = new Date()) {
     return current;
 }
 
+// 주간 키 생성
 function weeklyKey(date = new Date()) {
     return todayKey(getWeeklyPeriodStart(date));
 }
 
+// 로컬 스토리지 저장
 function persistState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+// 로컬 스토리지에서 불러오기
 function loadState() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -107,6 +141,7 @@ function loadState() {
     }
 }
 
+// 다크 모드 토글 버튼 라벨 업데이트
 function updateThemeToggleLabel() {
     if (!themeToggle) {
         return;
@@ -116,6 +151,7 @@ function updateThemeToggleLabel() {
     themeToggle.setAttribute("aria-label", state.theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환");
 }
 
+// 테마 적용
 function applyTheme(theme, shouldPersist = true) {
     state.theme = theme === "light" ? "light" : "dark";
     document.body.dataset.theme = state.theme;
@@ -127,11 +163,13 @@ function applyTheme(theme, shouldPersist = true) {
     }
 }
 
+// 상태저장 및 화면그리기
 function saveAndRender() {
     persistState();
     renderAll();
 }
 
+// 특정 날짜의 일일 기록 가져오기
 function getDailyRecord(dateKey) {
     if (!state.dailyProgress[dateKey]) {
         state.dailyProgress[dateKey] = {};
@@ -140,6 +178,7 @@ function getDailyRecord(dateKey) {
     return state.dailyProgress[dateKey];
 }
 
+// 특정 주간 기간의 기록 가져오기
 function getWeeklyRecord(periodKey) {
     if (!state.weeklyCompletions[periodKey]) {
         state.weeklyCompletions[periodKey] = {};
@@ -148,6 +187,7 @@ function getWeeklyRecord(periodKey) {
     return state.weeklyCompletions[periodKey];
 }
 
+// 일반 할 일 토글
 function toggleGeneralTask(taskId) {
     const task = state.generalTasks.find((item) => item.id === taskId);
     if (!task) {
@@ -158,11 +198,13 @@ function toggleGeneralTask(taskId) {
     saveAndRender();
 }
 
+// 일반 할 일 제거
 function removeGeneralTask(taskId) {
     state.generalTasks = state.generalTasks.filter((task) => task.id !== taskId);
     saveAndRender();
 }
 
+// 일일 할 일 토글
 function toggleDailyTask(taskId, dateKey) {
     const record = getDailyRecord(dateKey);
     const task = DAILY_TASKS.find((item) => item.id === taskId);
@@ -181,12 +223,14 @@ function toggleDailyTask(taskId, dateKey) {
     saveAndRender();
 }
 
+// 주간 할 일 토글
 function toggleWeeklyTask(taskId, periodKey) {
     const record = getWeeklyRecord(periodKey);
     record[taskId] = !record[taskId];
     saveAndRender();
 }
 
+// todo 생성
 function createTaskCard({ title, subtitle, done, badgeText, onClick, onDelete, progress }) {
     const card = document.createElement("article");
     card.className = `task-card card${done ? " is-done" : ""}`;
@@ -269,17 +313,19 @@ function createTaskCard({ title, subtitle, done, badgeText, onClick, onDelete, p
     return card;
 }
 
+// .todo 생성 모달 호출
 function openGeneralTaskModal() {
     if (!generalTaskModal) {
         return;
     }
 
     generalTaskForm.reset();
+    clearGeneralTaskError();
     generalTaskModal.show();
     window.setTimeout(() => generalTaskTitle.focus(), 150);
 }
 
-
+// .todo 리스트 화면그리기
 function renderGeneralTasks() {
     generalTaskList.innerHTML = "";
 
@@ -337,6 +383,8 @@ function renderGeneralTasks() {
     generalSummary.textContent = `${state.generalTasks.filter((task) => task.done).length}/${state.generalTasks.length}개`;
 }
 
+
+// 일일 컨텐츠 화면그리기
 function renderDailyTasks() {
     const dateKey = todayKey();
     const dailyRecord = state.dailyProgress[dateKey] || {};
@@ -361,6 +409,7 @@ function renderDailyTasks() {
     });
 }
 
+// 주간 컨텐츠 화면그리기
 function renderWeeklyTasks() {
     const periodKey = weeklyKey();
     const weeklyRecord = state.weeklyCompletions[periodKey] || {};
@@ -382,10 +431,12 @@ function renderWeeklyTasks() {
     });
 }
 
+// 헤더 화면그리기
 function renderHeader() {
     todayLabel.textContent = formatKoreanDate();
 }
 
+// 전체 화면그리기
 function renderAll() {
     renderHeader();
     renderGeneralTasks();
@@ -393,11 +444,20 @@ function renderAll() {
     renderWeeklyTasks();
 }
 
+// 이벤트 리스터 등록
 generalTaskForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
     const title = generalTaskTitle.value.trim();
     const subtitle = generalTaskSubtitle.value.trim();
+
+    if (hasSpecialCharacters(title) || hasSpecialCharacters(subtitle)) {
+        setGeneralTaskError("특수문자를 지우고 다시 입력해주세요.");
+        return;
+    }
+
+    clearGeneralTaskError();
+
     if (!title) {
         return;
     }
@@ -418,16 +478,27 @@ generalTaskForm.addEventListener("submit", (event) => {
     }
 });
 
+if (generalTaskTitle) {
+    generalTaskTitle.addEventListener("input", clearGeneralTaskError);
+}
+
+if (generalTaskSubtitle) {
+    generalTaskSubtitle.addEventListener("input", clearGeneralTaskError);
+}
+
+// 다크 모드 토글 버튼 이벤트 리스너
 if (themeToggle) {
     themeToggle.addEventListener("click", () => {
         applyTheme(state.theme === "light" ? "dark" : "light");
     });
 }
 
+// 초기화
 loadState();
 applyTheme(state.theme, false);
 renderAll();
 
+// 자동 새로고침 (1분마다)
 window.setInterval(() => {
     renderAll();
 }, 60000);
