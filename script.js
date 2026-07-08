@@ -1,50 +1,51 @@
-const STORAGE_KEY = "moon_todo_state_v1";
+const STORAGE_KEY = "llm_debate_todo_state_v2";
+const GENERAL_TASK_MODAL_ID = "generalTaskModal";
+const DEFAULT_THEME = "dark";
+
+const DAILY_TASKS = [
+    { id: "daily-expert", title: "숙련자", subtitle: "기억석판 파밍" },
+    { id: "daily-highest-dungeon", title: "최고레벨던전", subtitle: "수리석판 파밍" },
+    { id: "daily-upper-leveling", title: "상급레벨링", subtitle: "시학석판 파밍" },
+    { id: "daily-leveling", title: "레벨링", subtitle: "경험치 파밍" },
+    { id: "daily-tribe", title: "우호부족 퀘스트", subtitle: "클릭할 때마다 +3", special: "tribeQuest" }
+];
+
+const WEEKLY_TASKS = [
+    { id: "weekly-arcadion-1", title: "아르카디아 선수권 헤비급 1층", subtitle: "악세" },
+    { id: "weekly-arcadion-2", title: "아르카디아 선수권 헤비급 2층", subtitle: "머리, 손, 발" },
+    { id: "weekly-arcadion-3", title: "아르카디아 선수권 헤비급 3층", subtitle: "몸통, 바지" },
+    { id: "weekly-arcadion-4", title: "아르카디아 선수권 헤비급 4층", subtitle: "무기" },
+    { id: "weekly-echo", title: "연합레이드 : 세번째 반향세계", subtitle: "동전" },
+    { id: "weekly-doman", title: "도마 도읍지", subtitle: "길" }
+];
 
 const state = {
-    tasks: [],
-    completions: {},
-    focusDate: todayStr(),
-    focusYear: new Date().getFullYear(),
-    activeTab: "todocheck"
+    generalTasks: [],
+    dailyProgress: {},
+    weeklyCompletions: {},
+    theme: DEFAULT_THEME
 };
 
-const taskForm = document.getElementById("taskForm");
-const taskTitle = document.getElementById("taskTitle");
-const taskType = document.getElementById("taskType");
-const taskDate = document.getElementById("taskDate");
-const taskDateLabel = document.getElementById("taskDateLabel");
-const focusDateInput = document.getElementById("focusDate");
-const yearPicker = document.getElementById("yearPicker");
-const taskList = document.getElementById("taskList");
-const taskDashboards = document.getElementById("taskDashboards");
-const taskCount = document.getElementById("taskCount");
-const yearPlannedCount = document.getElementById("yearPlannedCount");
-const yearCompletionRate = document.getElementById("yearCompletionRate");
-const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
-const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+const todayLabel = document.getElementById("todayLabel");
+const generalSummary = document.getElementById("generalSummary");
+const generalTaskList = document.getElementById("generalTaskList");
+const dailyTaskList = document.getElementById("dailyTaskList");
+const weeklyTaskList = document.getElementById("weeklyTaskList");
+const generalTaskForm = document.getElementById("generalTaskForm");
+const generalTaskTitle = document.getElementById("generalTaskTitle");
+const generalTaskSubtitle = document.getElementById("generalTaskSubtitle");
+const themeToggle = document.getElementById("themeToggle");
+const generalTaskModalElement = document.getElementById(GENERAL_TASK_MODAL_ID);
+const generalTaskModal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(generalTaskModalElement) : null;
 
-// 오늘 날짜를 문자열로 생성(yyyy-mm-dd)
-function todayStr() {
-    return new Date().toISOString().slice(0, 10);
+function getPreferredTheme() {
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) {
+        return "light";
+    }
+
+    return DEFAULT_THEME;
 }
 
-// 이번달 문자열 생성(yyyy-mm)
-function monthStr(date) {
-    return date.toISOString().slice(0, 7);
-}
-
-// 날짜 문자열을 집어넣으면 각각 { year, month, day } 로 슬라이싱해서 반환
-function parseDateParts(dateStr) {
-    const [year, month, day] = dateStr.split("-").map((v) => Number(v));
-    return { year, month, day };
-}
-
-// 월 문자열 반환
-function formatMonthLabel(monthIndex) {
-    return `${monthIndex + 1}월`;
-}
-
-// todo 목록에 삽입되는 객체의 고유값을 생성하는 함수 (생성형 AI의 도움 받음)
 function makeId() {
     if (window.crypto && window.crypto.randomUUID) {
         return window.crypto.randomUUID();
@@ -53,16 +54,42 @@ function makeId() {
     return `task_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-function completionKey(taskId, date) {
-    return `${taskId}|${date}`;
+function todayKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
-// 로컬 스토리지 저장
+function formatKoreanDate(date = new Date()) {
+    const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} (${weekdays[date.getDay()]})`;
+}
+
+function getWeeklyPeriodStart(date = new Date()) {
+    const current = new Date(date);
+    current.setHours(0, 0, 0, 0);
+
+    const dayOfWeek = current.getDay();
+    const daysSinceTuesday = (dayOfWeek + 5) % 7;
+    current.setDate(current.getDate() - daysSinceTuesday);
+    current.setHours(17, 0, 0, 0);
+
+    if (date < current) {
+        current.setDate(current.getDate() - 7);
+    }
+
+    return current;
+}
+
+function weeklyKey(date = new Date()) {
+    return todayKey(getWeeklyPeriodStart(date));
+}
+
 function persistState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// 로컬 스토리지에서 저장된 데이터 불러오기
 function loadState() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -71,363 +98,336 @@ function loadState() {
         }
 
         const parsed = JSON.parse(raw);
-        state.tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
-        state.completions = parsed.completions && typeof parsed.completions === "object" ? parsed.completions : {};
-        state.focusDate = parsed.focusDate || todayStr();
-        state.focusYear = Number(parsed.focusYear) || new Date().getFullYear();
-        state.activeTab = parsed.activeTab || "todocheck";
+        state.generalTasks = Array.isArray(parsed.generalTasks) ? parsed.generalTasks : [];
+        state.dailyProgress = parsed.dailyProgress && typeof parsed.dailyProgress === "object" ? parsed.dailyProgress : {};
+        state.weeklyCompletions = parsed.weeklyCompletions && typeof parsed.weeklyCompletions === "object" ? parsed.weeklyCompletions : {};
+        state.theme = parsed.theme === "light" || parsed.theme === "dark" ? parsed.theme : getPreferredTheme();
     } catch (error) {
         console.error("상태 로딩 실패", error);
     }
 }
 
-// 네비게이션 탭 선택한 탭 활성화하고 나머지는 비활성화 상태로 세팅하는 함수
-function setActiveTab(tab) {
-    state.activeTab = tab;
-
-    tabButtons.forEach((button) => {
-        const isActive = button.dataset.tab === tab;
-        button.classList.toggle("active", isActive);
-    });
-
-    tabPanels.forEach((panel) => {
-        const isActive = panel.dataset.panel === tab;
-        panel.classList.toggle("active", isActive);
-    });
-
-    persistState();
-}
-
-// 
-function isVisibleOnDate(task, date) {
-    if (task.type === "one-time") {
-        return task.dueDate === date;
+function updateThemeToggleLabel() {
+    if (!themeToggle) {
+        return;
     }
 
-    return task.type === "daily" && date >= task.startDate;
+    themeToggle.textContent = state.theme === "light" ? "다크 모드" : "라이트 모드";
+    themeToggle.setAttribute("aria-label", state.theme === "light" ? "다크 모드로 전환" : "라이트 모드로 전환");
 }
 
-function tasksForDate(date) {
-    return state.tasks.filter((task) => isVisibleOnDate(task, date));
+function applyTheme(theme, shouldPersist = true) {
+    state.theme = theme === "light" ? "light" : "dark";
+    document.body.dataset.theme = state.theme;
+    document.documentElement.dataset.theme = state.theme;
+    updateThemeToggleLabel();
+
+    if (shouldPersist) {
+        persistState();
+    }
 }
 
-function isDone(task, date) {
-    return Boolean(state.completions[completionKey(task.id, date)]);
+function saveAndRender() {
+    persistState();
+    renderAll();
 }
 
-function setDone(task, date, done) {
-    const key = completionKey(task.id, date);
-    if (done) {
-        state.completions[key] = true;
+function getDailyRecord(dateKey) {
+    if (!state.dailyProgress[dateKey]) {
+        state.dailyProgress[dateKey] = {};
+    }
+
+    return state.dailyProgress[dateKey];
+}
+
+function getWeeklyRecord(periodKey) {
+    if (!state.weeklyCompletions[periodKey]) {
+        state.weeklyCompletions[periodKey] = {};
+    }
+
+    return state.weeklyCompletions[periodKey];
+}
+
+function toggleGeneralTask(taskId) {
+    const task = state.generalTasks.find((item) => item.id === taskId);
+    if (!task) {
+        return;
+    }
+
+    task.done = !task.done;
+    saveAndRender();
+}
+
+function removeGeneralTask(taskId) {
+    state.generalTasks = state.generalTasks.filter((task) => task.id !== taskId);
+    saveAndRender();
+}
+
+function toggleDailyTask(taskId, dateKey) {
+    const record = getDailyRecord(dateKey);
+    const task = DAILY_TASKS.find((item) => item.id === taskId);
+
+    if (!task) {
+        return;
+    }
+
+    if (task.special === "tribeQuest") {
+        const current = Number(record[taskId]) || 0;
+        record[taskId] = current >= 12 ? 0 : Math.min(current + 3, 12);
     } else {
-        delete state.completions[key];
-    }
-    persistState();
-    renderAll();
-}
-
-function removeTask(taskId) {
-    state.tasks = state.tasks.filter((task) => task.id !== taskId);
-
-    Object.keys(state.completions).forEach((key) => {
-        if (key.startsWith(`${taskId}|`)) {
-            delete state.completions[key];
-        }
-    });
-
-    persistState();
-    renderAll();
-}
-
-function updateTaskDateLabel() {
-    taskDateLabel.textContent = taskType.value === "daily" ? "반복 시작일" : "실행 날짜";
-}
-
-function openTaskDatePicker() {
-    if (typeof taskDate.showPicker === "function") {
-        taskDate.showPicker();
-        return;
+        record[taskId] = !record[taskId];
     }
 
-    taskDate.focus();
+    saveAndRender();
 }
 
-function renderTaskList() {
-    taskList.innerHTML = "";
-    const items = tasksForDate(state.focusDate);
+function toggleWeeklyTask(taskId, periodKey) {
+    const record = getWeeklyRecord(periodKey);
+    record[taskId] = !record[taskId];
+    saveAndRender();
+}
 
-    if (items.length === 0) {
-        const li = document.createElement("li");
-        li.className = "task-item";
-        li.innerHTML = "<div class='task-main'><strong></strong><small>add 메뉴에서 새 할 일을 추가해보세요.</small></div>";
-        taskList.appendChild(li);
-        return;
+function createTaskCard({ title, subtitle, done, badgeText, onClick, onDelete, progress }) {
+    const card = document.createElement("article");
+    card.className = `task-card card${done ? " is-done" : ""}`;
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("aria-pressed", done ? "true" : "false");
+
+    const body = document.createElement("div");
+    body.className = "card-body p-3 p-lg-4";
+
+    const head = document.createElement("div");
+    head.className = "d-flex justify-content-between align-items-start gap-3";
+
+    const content = document.createElement("div");
+    content.className = "task-content";
+
+    const titleEl = document.createElement("h3");
+    titleEl.className = "task-title h6 mb-1";
+    titleEl.textContent = title;
+
+    const subtitleEl = document.createElement("p");
+    subtitleEl.className = "task-subtitle mb-0";
+    subtitleEl.textContent = subtitle || "";
+
+    content.appendChild(titleEl);
+    content.appendChild(subtitleEl);
+
+    const badge = document.createElement("span");
+    badge.className = `badge rounded-pill ${done ? "text-bg-success" : "text-bg-secondary"}`;
+    badge.textContent = badgeText;
+
+    head.appendChild(content);
+    head.appendChild(badge);
+    body.appendChild(head);
+
+    if (typeof progress === "number") {
+        const progressWrap = document.createElement("div");
+        progressWrap.className = "progress mt-3";
+
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress-bar bg-success";
+        progressBar.style.width = `${Math.min(100, Math.round((progress / 12) * 100))}%`;
+        progressBar.setAttribute("role", "progressbar");
+        progressBar.setAttribute("aria-valuemin", "0");
+        progressBar.setAttribute("aria-valuemax", "12");
+        progressBar.setAttribute("aria-valuenow", String(progress));
+        progressBar.textContent = `${progress}/12`;
+
+        progressWrap.appendChild(progressBar);
+        body.appendChild(progressWrap);
     }
 
-    items.forEach((task) => {
-        const done = isDone(task, state.focusDate);
-        const li = document.createElement("li");
-        li.className = `task-item${done ? " done" : ""}`;
-        li.setAttribute("role", "button");
-        li.setAttribute("tabindex", "0");
-        li.setAttribute("aria-label", `할 일 완료 토글: ${task.title}`);
+    card.appendChild(body);
 
-        const indicator = document.createElement("span");
-        indicator.className = `task-check-indicator${done ? " done" : ""}`;
-        indicator.setAttribute("aria-hidden", "true");
+    if (typeof onDelete === "function") {
+        const footer = document.createElement("div");
+        footer.className = "card-footer bg-transparent border-0 pt-0 px-3 px-lg-4 pb-3 pb-lg-4 d-flex justify-content-end";
 
-        const main = document.createElement("div");
-        main.className = "task-main";
-
-        const title = document.createElement("strong");
-        title.textContent = task.title;
-
-        const meta = document.createElement("small");
-        if (task.type === "daily") {
-            meta.textContent = `매일 · 시작일 ${task.startDate}`;
-        } else {
-            meta.textContent = `일회성 · 실행일 ${task.dueDate}`;
-        }
-
-        main.appendChild(title);
-        main.appendChild(meta);
-
-        const removeBtn = document.createElement("button");
-        removeBtn.type = "button";
-        removeBtn.className = "btn-delete";
-        removeBtn.textContent = "삭제";
-        removeBtn.addEventListener("click", (event) => {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "btn btn-sm btn-outline-danger";
+        deleteBtn.textContent = "삭제";
+        deleteBtn.addEventListener("click", (event) => {
             event.stopPropagation();
-            removeTask(task.id);
+            onDelete();
         });
 
-        li.addEventListener("click", () => {
-            setDone(task, state.focusDate, !done);
-        });
+        footer.appendChild(deleteBtn);
+        card.appendChild(footer);
+    }
 
-        li.addEventListener("keydown", (event) => {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setDone(task, state.focusDate, !done);
-            }
-        });
-
-        li.appendChild(indicator);
-        li.appendChild(main);
-        li.appendChild(removeBtn);
-        taskList.appendChild(li);
+    card.addEventListener("click", () => onClick());
+    card.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+        }
     });
+
+    return card;
 }
 
-function dateRangeList(startDate, endDate) {
-    const list = [];
-    let current = new Date(startDate);
-    const end = new Date(endDate);
-
-    while (current <= end) {
-        list.push(current.toISOString().slice(0, 10));
-        current.setDate(current.getDate() + 1);
-    }
-
-    return list;
-}
-
-function getMonthlyStatsForTask(task, year, monthIndex) {
-    const monthStart = new Date(year, monthIndex, 1);
-    const monthEnd = new Date(year, monthIndex + 1, 0);
-
-    let plannedDates = [];
-
-    if (task.type === "one-time") {
-        const { year: dueYear, month: dueMonth } = parseDateParts(task.dueDate);
-        if (dueYear === year && dueMonth === monthIndex + 1) {
-            plannedDates = [task.dueDate];
-        }
-    } else {
-        const start = new Date(task.startDate);
-        if (start <= monthEnd) {
-            const actualStart = start > monthStart ? start : monthStart;
-            plannedDates = dateRangeList(actualStart, monthEnd);
-        }
-    }
-
-    const planned = plannedDates.length;
-    const done = plannedDates.filter((date) => isDone(task, date)).length;
-
-    let status = "none";
-    if (planned > 0 && done === planned) {
-        status = "done";
-    } else if (done > 0) {
-        status = "partial";
-    } else if (planned > 0) {
-        status = "missed";
-    }
-
-    return { planned, done, status };
-}
-
-function renderTaskDashboards() {
-    taskDashboards.innerHTML = "";
-
-    if (state.tasks.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "task-dashboard-card";
-        empty.textContent = "등록된 할 일이 없습니다. Add 탭에서 할 일을 먼저 추가하세요.";
-        taskDashboards.appendChild(empty);
-        taskCount.textContent = "0";
-        yearPlannedCount.textContent = "0";
-        yearCompletionRate.textContent = "0%";
+function openGeneralTaskModal() {
+    if (!generalTaskModal) {
         return;
     }
 
-    let allPlanned = 0;
-    let allDone = 0;
+    generalTaskForm.reset();
+    generalTaskModal.show();
+    window.setTimeout(() => generalTaskTitle.focus(), 150);
+}
 
-    state.tasks.forEach((task) => {
-        const card = document.createElement("article");
-        card.className = "task-dashboard-card";
 
-        const top = document.createElement("div");
-        top.className = "task-dashboard-top";
+function renderGeneralTasks() {
+    generalTaskList.innerHTML = "";
 
-        const left = document.createElement("div");
-        const title = document.createElement("p");
-        title.className = "task-dashboard-title";
-        title.textContent = task.title;
+    state.generalTasks.forEach((task) => {
+        const card = createTaskCard({
+            title: task.title,
+            subtitle: task.subtitle,
+            done: Boolean(task.done),
+            badgeText: task.done ? "완료" : "진행 중",
+            onClick: () => toggleGeneralTask(task.id),
+            onDelete: () => removeGeneralTask(task.id)
+        });
 
-        const meta = document.createElement("p");
-        meta.className = "task-dashboard-meta";
-        meta.textContent = task.type === "daily" ? `매일 · 시작일 ${task.startDate}` : `일회성 · 실행일 ${task.dueDate}`;
-
-        left.appendChild(title);
-        left.appendChild(meta);
-
-        const rate = document.createElement("p");
-        rate.className = "task-dashboard-rate";
-
-        const monthStrip = document.createElement("div");
-        monthStrip.className = "month-strip";
-
-        let taskPlanned = 0;
-        let taskDone = 0;
-
-        for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
-            const stats = getMonthlyStatsForTask(task, state.focusYear, monthIndex);
-            taskPlanned += stats.planned;
-            taskDone += stats.done;
-
-            const chip = document.createElement("div");
-            chip.className = `month-chip ${stats.status}`;
-
-            const name = document.createElement("span");
-            name.className = "month-name";
-            name.textContent = formatMonthLabel(monthIndex);
-
-            const metric = document.createElement("span");
-            metric.className = "month-metric";
-            metric.textContent = stats.planned === 0 ? "-" : `${stats.done}/${stats.planned}`;
-
-            chip.appendChild(name);
-            chip.appendChild(metric);
-            monthStrip.appendChild(chip);
-        }
-
-        allPlanned += taskPlanned;
-        allDone += taskDone;
-
-        const taskRate = taskPlanned === 0 ? 0 : Math.round((taskDone / taskPlanned) * 100);
-        rate.textContent = `완료율 ${taskRate}%`;
-
-        top.appendChild(left);
-        top.appendChild(rate);
-
-        card.appendChild(top);
-        card.appendChild(monthStrip);
-        taskDashboards.appendChild(card);
+        generalTaskList.appendChild(card);
     });
 
-    taskCount.textContent = String(state.tasks.length);
-    yearPlannedCount.textContent = String(allPlanned);
-    yearCompletionRate.textContent = `${allPlanned === 0 ? 0 : Math.round((allDone / allPlanned) * 100)}%`;
+    const addCard = document.createElement("button");
+    addCard.type = "button";
+    addCard.className = "task-card task-card-add card border-dashed border-2 w-100 text-start";
+    addCard.setAttribute("aria-label", "일반 할 일 추가");
+
+    const body = document.createElement("div");
+    body.className = "card-body p-4 d-flex align-items-center justify-content-center text-center";
+
+    const inner = document.createElement("div");
+    inner.className = "add-card-inner";
+
+    const plus = document.createElement("div");
+    plus.className = "add-card-plus";
+    plus.textContent = "+";
+
+    const label = document.createElement("h3");
+    label.className = "h6 mb-1";
+    label.textContent = "할 일 추가";
+
+    const helper = document.createElement("p");
+    helper.className = "mb-0 text-body-secondary small";
+    helper.textContent = "“성공은 대단한 재능의 결과가 아니라, 매일매일 쌓아 올린 수많은 노력의 결과물이다.”";
+
+    inner.appendChild(plus);
+    inner.appendChild(label);
+    inner.appendChild(helper);
+    body.appendChild(inner);
+    addCard.appendChild(body);
+
+    addCard.addEventListener("click", openGeneralTaskModal);
+    addCard.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openGeneralTaskModal();
+        }
+    });
+
+    generalTaskList.appendChild(addCard);
+    generalSummary.textContent = `${state.generalTasks.filter((task) => task.done).length}/${state.generalTasks.length}개`;
+}
+
+function renderDailyTasks() {
+    const dateKey = todayKey();
+    const dailyRecord = state.dailyProgress[dateKey] || {};
+
+    dailyTaskList.innerHTML = "";
+
+    DAILY_TASKS.forEach((task) => {
+        const isQuest = task.special === "tribeQuest";
+        const progress = isQuest ? Number(dailyRecord[task.id]) || 0 : (dailyRecord[task.id] ? 1 : 0);
+        const done = isQuest ? progress >= 12 : Boolean(dailyRecord[task.id]);
+
+        const card = createTaskCard({
+            title: task.title,
+            subtitle: task.subtitle,
+            done,
+            badgeText: isQuest ? `${progress}/12` : done ? "완료" : "대기",
+            progress: isQuest ? progress : null,
+            onClick: () => toggleDailyTask(task.id, dateKey)
+        });
+
+        dailyTaskList.appendChild(card);
+    });
+}
+
+function renderWeeklyTasks() {
+    const periodKey = weeklyKey();
+    const weeklyRecord = state.weeklyCompletions[periodKey] || {};
+
+    weeklyTaskList.innerHTML = "";
+
+    WEEKLY_TASKS.forEach((task) => {
+        const done = Boolean(weeklyRecord[task.id]);
+
+        const card = createTaskCard({
+            title: task.title,
+            subtitle: task.subtitle,
+            done,
+            badgeText: done ? "완료" : "대기",
+            onClick: () => toggleWeeklyTask(task.id, periodKey)
+        });
+
+        weeklyTaskList.appendChild(card);
+    });
+}
+
+function renderHeader() {
+    todayLabel.textContent = formatKoreanDate();
 }
 
 function renderAll() {
-    renderTaskList();
-    renderTaskDashboards();
+    renderHeader();
+    renderGeneralTasks();
+    renderDailyTasks();
+    renderWeeklyTasks();
 }
 
-taskForm.addEventListener("submit", (event) => {
+generalTaskForm.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    const title = taskTitle.value.trim();
+    const title = generalTaskTitle.value.trim();
+    const subtitle = generalTaskSubtitle.value.trim();
     if (!title) {
         return;
     }
 
-    const type = taskType.value;
-    const date = taskDate.value || todayStr();
-
-    const task = {
+    state.generalTasks.push({
         id: makeId(),
         title,
-        type,
+        subtitle,
+        done: false,
         createdAt: new Date().toISOString()
-    };
-
-    if (type === "daily") {
-        task.startDate = date;
-    } else {
-        task.dueDate = date;
-    }
-
-    state.tasks.push(task);
-    persistState();
-
-    taskTitle.value = "";
-    renderAll();
-});
-
-taskType.addEventListener("change", updateTaskDateLabel);
-
-taskDate.addEventListener("focus", openTaskDatePicker);
-taskDate.addEventListener("click", openTaskDatePicker);
-taskDate.addEventListener("keydown", (event) => {
-    const allowedKeys = ["Tab", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", "Escape"];
-    if (!allowedKeys.includes(event.key)) {
-        event.preventDefault();
-    }
-});
-
-tabButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        setActiveTab(button.dataset.tab || "todocheck");
     });
-});
 
-focusDateInput.addEventListener("change", () => {
-    state.focusDate = focusDateInput.value || todayStr();
     persistState();
-    renderTaskList();
-});
+    renderAll();
 
-yearPicker.addEventListener("change", () => {
-    const parsedYear = Number(yearPicker.value);
-    if (!Number.isFinite(parsedYear) || parsedYear < 2000 || parsedYear > 2100) {
-        yearPicker.value = String(state.focusYear);
-        return;
+    if (generalTaskModal) {
+        generalTaskModal.hide();
     }
-
-    state.focusYear = parsedYear;
-    persistState();
-    renderTaskDashboards();
 });
+
+if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+        applyTheme(state.theme === "light" ? "dark" : "light");
+    });
+}
 
 loadState();
-
-focusDateInput.value = state.focusDate;
-yearPicker.value = String(state.focusYear);
-taskDate.value = state.focusDate;
-
-updateTaskDateLabel();
-setActiveTab(state.activeTab);
+applyTheme(state.theme, false);
 renderAll();
+
+window.setInterval(() => {
+    renderAll();
+}, 60000);
